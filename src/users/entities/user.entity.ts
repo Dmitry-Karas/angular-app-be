@@ -1,5 +1,7 @@
 import {
-  IsDefined,
+  Contains,
+  IsEmail,
+  IsNotEmpty,
   IsOptional,
   Matches,
   MaxLength,
@@ -14,7 +16,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -26,47 +28,52 @@ export class User extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // @Column()
-  // @MinLength(4)
-  // @MaxLength(100)
-  // @IsOptional()
-  // name: string;
+  @Column({ nullable: true })
+  @MinLength(4)
+  @MaxLength(100)
+  @IsOptional()
+  name: string;
 
-  // @Column()
-  // @IsDefined()
-  // @MinLength(4)
-  // @MaxLength(100)
-  // @IsOptional()
-  // lastname: string;
+  @Column({ nullable: true })
+  @IsNotEmpty()
+  @MinLength(4)
+  @MaxLength(100)
+  @IsOptional()
+  lastname: string;
 
-  @Column()
-  @IsDefined()
+  @Column({ unique: true })
+  @IsNotEmpty()
   @MinLength(4)
   @MaxLength(100)
   @Matches(/[^A-Za-z0-9]*/)
   login: string;
 
   @Column()
+  @IsNotEmpty()
+  @MinLength(4)
+  @MaxLength(100)
   password: string;
 
-  // @Column()
-  // @IsDefined()
-  // @IsOptional()
-  // email: string;
+  @Column({ nullable: true })
+  @IsOptional()
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
 
-  // @Column()
-  // @IsOptional()
-  // gender: string;
+  @Column({ nullable: true })
+  @IsOptional()
+  @Contains('male' || 'female')
+  gender: string;
 
-  // @Column()
-  // @IsOptional()
-  // birthday: string;
+  @Column({ nullable: true })
+  @IsOptional()
+  birthday: string;
 
   @CreateDateColumn()
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updatedAt: Date;
 
   @BeforeInsert()
   async hashPassword() {
