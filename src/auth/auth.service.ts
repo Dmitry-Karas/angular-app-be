@@ -1,9 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import { User } from 'src/users/entities/user.entity';
 
 import { UsersService } from 'src/users/users.service';
-import { CredentialsDto } from './dto/credentials.dto';
+import { AuthLoginDto } from './dto/auth-login.dto';
 
 @Injectable()
 export class AuthService {
@@ -12,31 +16,46 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async validateUser(login: string, password: string): Promise<any> {
-    const user = await this.usersService.findOne(login);
+  async register(authLoginDto: AuthLoginDto) {
+    const user = await this.usersService.findOne(authLoginDto.login);
 
-    if (user && bcrypt.compareSync(password, user.password)) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...result } = user;
-
-      return result;
+    if (user) {
+      throw new ConflictException();
     }
 
-    return null;
+    await this.usersService.create(authLoginDto);
+
+    return this.login(authLoginDto);
   }
 
-  async login(user: CredentialsDto) {
-    const payload = { login: user.login /*, sub: user.id*/ };
-    const existedUser = await this.usersService.findOne(user.login);
-
-    if (existedUser) {
-      return;
-    }
-
-    await this.usersService.create(user);
+  async login(authLoginDto: AuthLoginDto) {
+    const { id, login, name, lastname, email, gender, birthday, createdAt } =
+      await this.validateUser(authLoginDto);
+    const payload = {
+      userId: id,
+    };
 
     return {
       access_token: this.jwtService.sign(payload),
+      id,
+      login,
+      name,
+      lastname,
+      email,
+      gender,
+      birthday,
     };
+  }
+
+  async validateUser(authLoginDto: AuthLoginDto): Promise<User> {
+    const { login, password } = authLoginDto;
+
+    const user = await this.usersService.findOne(login);
+
+    if (!(await user?.validatePassword(password))) {
+      throw new UnauthorizedException('Invalid login or password');
+    }
+
+    return user;
   }
 }
